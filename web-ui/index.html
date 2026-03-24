@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stadium Audio Equalizer</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #1a1a2e;
+      color: #e0e0e0;
+      display: flex;
+      justify-content: center;
+      padding: 2rem 1rem;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 480px;
+      width: 100%;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 1.5rem;
+      margin-bottom: 1.5rem;
+      color: #e94560;
+    }
+
+    /* Status indicator */
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+      padding: 0.5rem 0.75rem;
+      background: #16213e;
+      border-radius: 6px;
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #555;
+      flex-shrink: 0;
+    }
+
+    .status-dot.idle       { background: #555; }
+    .status-dot.calibrating { background: #f0a500; animation: pulse 0.8s infinite alternate; }
+    .status-dot.processing  { background: #0dff72; }
+    .status-dot.bypassed    { background: #ff6b6b; }
+
+    @keyframes pulse { to { opacity: 0.3; } }
+
+    .status-text {
+      font-size: 0.875rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* Buttons */
+    .btn-row {
+      display: flex;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+
+    button {
+      flex: 1;
+      padding: 0.6rem 1rem;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    #btn-start {
+      background: #0dff72;
+      color: #1a1a2e;
+    }
+    #btn-start:hover { background: #0be065; }
+    #btn-start.active {
+      background: #ff6b6b;
+      color: #fff;
+    }
+    #btn-start.active:hover { background: #e05555; }
+
+    #btn-calibrate {
+      background: #f0a500;
+      color: #1a1a2e;
+    }
+    #btn-calibrate:hover { background: #d99400; }
+    #btn-calibrate:disabled {
+      background: #555;
+      color: #999;
+      cursor: not-allowed;
+    }
+
+    /* Sliders */
+    .slider-group {
+      margin-bottom: 1.5rem;
+    }
+
+    .slider-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 0.75rem;
+    }
+
+    .slider-label {
+      width: 70px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+
+    .slider-row input[type="range"] {
+      flex: 1;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 6px;
+      background: #16213e;
+      border-radius: 3px;
+      outline: none;
+    }
+
+    .slider-row input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      background: #e94560;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+
+    .slider-value {
+      width: 50px;
+      text-align: right;
+      font-size: 0.8rem;
+      font-variant-numeric: tabular-nums;
+      flex-shrink: 0;
+    }
+
+    /* Bypass toggle */
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+      padding: 0.5rem 0.75rem;
+      background: #16213e;
+      border-radius: 6px;
+    }
+
+    .toggle-row label {
+      font-size: 0.875rem;
+      font-weight: 600;
+    }
+
+    .toggle-switch {
+      position: relative;
+      width: 44px;
+      height: 24px;
+    }
+
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .toggle-slider {
+      position: absolute;
+      inset: 0;
+      background: #555;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .toggle-slider::before {
+      content: "";
+      position: absolute;
+      left: 3px;
+      top: 3px;
+      width: 18px;
+      height: 18px;
+      background: #fff;
+      border-radius: 50%;
+      transition: transform 0.2s;
+    }
+
+    .toggle-switch input:checked + .toggle-slider {
+      background: #ff6b6b;
+    }
+
+    .toggle-switch input:checked + .toggle-slider::before {
+      transform: translateX(20px);
+    }
+
+    /* Spectrum canvas */
+    .spectrum-container {
+      background: #16213e;
+      border-radius: 6px;
+      padding: 0.5rem;
+    }
+
+    .spectrum-container h3 {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.5rem;
+      color: #888;
+    }
+
+    #spectrum-canvas {
+      display: block;
+      width: 100%;
+      height: 128px;
+      border-radius: 4px;
+      background: #0f0f23;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Stadium Audio Equalizer</h1>
+
+    <!-- Status -->
+    <div class="status-bar">
+      <div id="status-dot" class="status-dot idle"></div>
+      <span id="status-text" class="status-text">Idle</span>
+    </div>
+
+    <!-- Buttons -->
+    <div class="btn-row">
+      <button id="btn-start">Start</button>
+      <button id="btn-calibrate" disabled>Calibrate</button>
+    </div>
+
+    <!-- Mix sliders -->
+    <div class="slider-group">
+      <div class="slider-row">
+        <span class="slider-label">Crowd</span>
+        <input type="range" id="slider-crowd" min="-1" max="1" step="0.01" value="0">
+        <span class="slider-value" id="val-crowd">0.00</span>
+      </div>
+      <div class="slider-row">
+        <span class="slider-label">Speaker</span>
+        <input type="range" id="slider-speaker" min="-1" max="1" step="0.01" value="0">
+        <span class="slider-value" id="val-speaker">0.00</span>
+      </div>
+      <div class="slider-row">
+        <span class="slider-label">Music</span>
+        <input type="range" id="slider-music" min="-1" max="1" step="0.01" value="0">
+        <span class="slider-value" id="val-music">0.00</span>
+      </div>
+      <div class="slider-row">
+        <span class="slider-label">Gain (dB)</span>
+        <input type="range" id="slider-gain" min="-20" max="20" step="0.5" value="0">
+        <span class="slider-value" id="val-gain">0.0 dB</span>
+      </div>
+    </div>
+
+    <!-- Bypass toggle -->
+    <div class="toggle-row">
+      <label for="toggle-bypass">Bypass</label>
+      <div class="toggle-switch">
+        <input type="checkbox" id="toggle-bypass">
+        <span class="toggle-slider"></span>
+      </div>
+    </div>
+
+    <!-- Spectrum visualization -->
+    <div class="spectrum-container">
+      <h3>Spectrum</h3>
+      <canvas id="spectrum-canvas" width="256" height="128"></canvas>
+    </div>
+  </div>
+
+  <script src="src/ui.ts" type="module"></script>
+  <script src="src/main.ts" type="module"></script>
+</body>
+</html>

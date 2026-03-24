@@ -1,0 +1,12 @@
+[package]
+name = "stadium-eq-cli"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+stadium-eq-core = { path = "../core" }
+stadium-eq-neural = { path = "../neural" }
+clap = { version = "4", features = ["derive"] }
+cpal = "0.15"
+hound = "3.5"
+anyhow = "1"
