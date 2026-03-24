@@ -1,0 +1,43 @@
+{
+  "name": "stadium-eq-react",
+  "version": "0.1.0",
+  "description": "React hooks and components for the Stadium Audio Equalizer",
+  "type": "module",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0 || ^19.0.0",
+    "stadium-eq": ">=0.1.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.0",
+    "react": "^18.2.0",
+    "stadium-eq": "file:../stadium-eq-js",
+    "typescript": "^5.4.0"
+  },
+  "license": "MIT",
+  "keywords": [
+    "react",
+    "audio",
+    "equalizer",
+    "wasm",
+    "web-audio",
+    "dsp",
+    "stadium"
+  ]
+}

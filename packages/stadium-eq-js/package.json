@@ -1,0 +1,36 @@
+{
+  "name": "stadium-eq",
+  "version": "0.1.0",
+  "description": "Vanilla JS wrapper for the Stadium Audio Equalizer WASM module",
+  "type": "module",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./worklet": "./dist/worklet-processor.js"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  },
+  "license": "MIT",
+  "keywords": [
+    "audio",
+    "equalizer",
+    "wasm",
+    "web-audio",
+    "dsp",
+    "stadium"
+  ]
+}
