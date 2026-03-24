@@ -309,6 +309,11 @@ export class StadiumEQ {
       return ctx.createMediaStreamSource(src);
     }
 
+    // If an HTMLMediaElement was provided (e.g. <audio>), wrap it.
+    if (typeof HTMLMediaElement !== "undefined" && src instanceof HTMLMediaElement) {
+      return ctx.createMediaElementSource(src);
+    }
+
     // Default: request microphone.
     this.micStream = await navigator.mediaDevices.getUserMedia({
       audio: {

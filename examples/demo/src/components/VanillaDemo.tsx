@@ -3,6 +3,8 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { StadiumEQ } from "stadium-eq";
 import type { PipelineStatus, MixLevels } from "stadium-eq";
+import { AudioSourceSelector } from "./AudioSourceSelector";
+import { AUDIO_SAMPLES } from "../audio-samples";
 
 const STATUS_COLORS: Record<string, string> = {
   idle: "#555",
@@ -19,11 +21,13 @@ const STATUS_COLORS: Record<string, string> = {
  */
 export default function VanillaDemo() {
   const eqRef = useRef<StadiumEQ | null>(null);
+  const audioElRef = useRef<HTMLAudioElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef<number>(0);
 
   const [status, setStatus] = useState<PipelineStatus>("idle");
   const [error, setError] = useState<string | null>(null);
+  const [sourceId, setSourceId] = useState("mic");
   const [mix, setMix] = useState<MixLevels>({
     crowd: 0,
     speaker: 0,
@@ -33,35 +37,17 @@ export default function VanillaDemo() {
   const [log, setLog] = useState<string[]>([]);
 
   const appendLog = useCallback((msg: string) => {
-    setLog((prev) => [...prev.slice(-19), `[${new Date().toLocaleTimeString()}] ${msg}`]);
+    setLog((prev) => [
+      ...prev.slice(-19),
+      `[${new Date().toLocaleTimeString()}] ${msg}`,
+    ]);
   }, []);
 
-  // Create instance once
-  useEffect(() => {
-    const eq = new StadiumEQ({ wasmUrl: "/stadium_eq.wasm" });
-
-    eq.on("statuschange", (s: PipelineStatus) => {
-      setStatus(s);
-      appendLog(`status → ${s}`);
-    });
-    eq.on("error", (msg: string) => {
-      setError(msg);
-      appendLog(`error: ${msg}`);
-    });
-    eq.on("ready", () => appendLog("ready"));
-    eq.on("destroyed", () => appendLog("destroyed"));
-
-    eqRef.current = eq;
-    appendLog("StadiumEQ instance created");
-
-    return () => {
-      eq.destroy();
-      eqRef.current = null;
-    };
-  }, [appendLog]);
-
   // Bar spectrum visualization
-  const isRunning = status === "processing" || status === "calibrating" || status === "bypassed";
+  const isRunning =
+    status === "processing" ||
+    status === "calibrating" ||
+    status === "bypassed";
 
   useEffect(() => {
     if (!isRunning) {
@@ -90,7 +76,12 @@ export default function VanillaDemo() {
         const pct = data[i] / 255;
         const barH = pct * h;
         ctx.fillStyle = `hsl(${160 - pct * 120}, 100%, 50%)`;
-        ctx.fillRect(i * barW, h - barH, barW > 1 ? barW - 0.5 : barW, barH);
+        ctx.fillRect(
+          i * barW,
+          h - barH,
+          barW > 1 ? barW - 0.5 : barW,
+          barH
+        );
       }
     };
     draw();
@@ -100,15 +91,68 @@ export default function VanillaDemo() {
     };
   }, [isRunning]);
 
+  const cleanupAudio = useCallback(() => {
+    if (audioElRef.current) {
+      audioElRef.current.pause();
+      audioElRef.current.src = "";
+      audioElRef.current = null;
+    }
+  }, []);
+
   const handleStart = async () => {
     setError(null);
-    appendLog("calling eq.start()…");
-    await eqRef.current?.start();
+
+    // Destroy previous instance if any
+    if (eqRef.current) {
+      eqRef.current.destroy();
+      eqRef.current = null;
+    }
+    cleanupAudio();
+
+    // Build audioSource option
+    let audioSource: HTMLAudioElement | undefined;
+    if (sourceId !== "mic") {
+      const sample = AUDIO_SAMPLES.find((s) => s.id === sourceId);
+      if (sample) {
+        const el = new Audio(sample.file);
+        el.crossOrigin = "anonymous";
+        el.loop = true;
+        audioElRef.current = el;
+        audioSource = el;
+      }
+    }
+
+    const eq = new StadiumEQ({
+      wasmUrl: "/stadium_eq.wasm",
+      audioSource,
+    });
+    eq.on("statuschange", (s: PipelineStatus) => {
+      setStatus(s);
+      appendLog(`status → ${s}`);
+    });
+    eq.on("error", (msg: string) => {
+      setError(msg);
+      appendLog(`error: ${msg}`);
+    });
+    eq.on("ready", () => appendLog("ready"));
+    eq.on("destroyed", () => appendLog("destroyed"));
+
+    eqRef.current = eq;
+    appendLog(`calling eq.start() [source: ${sourceId}]…`);
+    await eq.start();
+
+    // Start playback for sample audio
+    if (audioElRef.current) {
+      audioElRef.current.play();
+    }
   };
 
   const handleStop = () => {
     appendLog("calling eq.stop()");
     eqRef.current?.stop();
+    eqRef.current?.destroy();
+    eqRef.current = null;
+    cleanupAudio();
   };
 
   const handleCalibrate = () => {
@@ -124,26 +168,61 @@ export default function VanillaDemo() {
     });
   };
 
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      eqRef.current?.destroy();
+      eqRef.current = null;
+      cleanupAudio();
+    };
+  }, [cleanupAudio]);
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       {/* Controls card */}
       <div style={{ background: "#16213e", borderRadius: 12, padding: 24 }}>
         {/* Status */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            marginBottom: 16,
+          }}
+        >
           <div
             style={{
               width: 12,
               height: 12,
               borderRadius: "50%",
               background: STATUS_COLORS[status] ?? "#555",
-              boxShadow: isRunning ? `0 0 8px ${STATUS_COLORS[status]}` : "none",
+              boxShadow: isRunning
+                ? `0 0 8px ${STATUS_COLORS[status]}`
+                : "none",
             }}
           />
-          <span style={{ fontSize: 13, textTransform: "uppercase", letterSpacing: 1 }}>
+          <span
+            style={{
+              fontSize: 13,
+              textTransform: "uppercase",
+              letterSpacing: 1,
+            }}
+          >
             {status}
           </span>
-          {error && <span style={{ fontSize: 12, color: "#ff6b6b", marginLeft: 8 }}>{error}</span>}
+          {error && (
+            <span style={{ fontSize: 12, color: "#ff6b6b", marginLeft: 8 }}>
+              {error}
+            </span>
+          )}
         </div>
+
+        {/* Audio source selector */}
+        <AudioSourceSelector
+          value={sourceId}
+          onChange={setSourceId}
+          disabled={isRunning}
+        />
 
         {/* Spectrum */}
         <canvas
@@ -194,7 +273,9 @@ export default function VanillaDemo() {
             Calibrate
           </button>
           <button
-            onClick={() => eqRef.current?.setBypass(!( status === "bypassed"))}
+            onClick={() =>
+              eqRef.current?.setBypass(!(status === "bypassed"))
+            }
             disabled={!isRunning}
             style={{
               flex: 1,
@@ -213,8 +294,22 @@ export default function VanillaDemo() {
 
         {/* Sliders */}
         {(["crowd", "speaker", "music"] as const).map((key) => (
-          <div key={key} style={{ display: "flex", alignItems: "center", marginBottom: 8 }}>
-            <span style={{ width: 70, fontSize: 13, fontWeight: 600, textTransform: "capitalize" }}>
+          <div
+            key={key}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              marginBottom: 8,
+            }}
+          >
+            <span
+              style={{
+                width: 70,
+                fontSize: 13,
+                fontWeight: 600,
+                textTransform: "capitalize",
+              }}
+            >
               {key}
             </span>
             <input
@@ -226,13 +321,22 @@ export default function VanillaDemo() {
               onChange={(e) => handleMixChange(key, Number(e.target.value))}
               style={{ flex: 1 }}
             />
-            <span style={{ width: 50, textAlign: "right", fontSize: 12, fontVariantNumeric: "tabular-nums" }}>
+            <span
+              style={{
+                width: 50,
+                textAlign: "right",
+                fontSize: 12,
+                fontVariantNumeric: "tabular-nums",
+              }}
+            >
               {mix[key].toFixed(2)}
             </span>
           </div>
         ))}
         <div style={{ display: "flex", alignItems: "center" }}>
-          <span style={{ width: 70, fontSize: 13, fontWeight: 600 }}>Gain</span>
+          <span style={{ width: 70, fontSize: 13, fontWeight: 600 }}>
+            Gain
+          </span>
           <input
             type="range"
             min={-20}
@@ -242,7 +346,14 @@ export default function VanillaDemo() {
             onChange={(e) => handleMixChange("gainDb", Number(e.target.value))}
             style={{ flex: 1 }}
           />
-          <span style={{ width: 50, textAlign: "right", fontSize: 12, fontVariantNumeric: "tabular-nums" }}>
+          <span
+            style={{
+              width: 50,
+              textAlign: "right",
+              fontSize: 12,
+              fontVariantNumeric: "tabular-nums",
+            }}
+          >
             {mix.gainDb.toFixed(1)}dB
           </span>
         </div>
@@ -261,7 +372,9 @@ export default function VanillaDemo() {
           overflow: "auto",
         }}
       >
-        <div style={{ color: "#555", marginBottom: 8, fontWeight: 700 }}>Event Log</div>
+        <div style={{ color: "#555", marginBottom: 8, fontWeight: 700 }}>
+          Event Log
+        </div>
         {log.length === 0 ? (
           <div style={{ color: "#444" }}>No events yet…</div>
         ) : (

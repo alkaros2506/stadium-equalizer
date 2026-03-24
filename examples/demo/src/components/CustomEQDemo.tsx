@@ -1,7 +1,9 @@
 "use client";
 
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState, useCallback } from "react";
 import { useStadiumEQ } from "stadium-eq-react";
+import { AudioSourceSelector } from "./AudioSourceSelector";
+import { useSampleAudio } from "../hooks/use-sample-audio";
 
 const STATUS_COLORS: Record<string, string> = {
   idle: "#555",
@@ -13,9 +15,45 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function CustomEQDemo() {
-  const eq = useStadiumEQ({ wasmUrl: "/stadium_eq.wasm" });
+  const [sourceId, setSourceId] = useState("mic");
+  const { getAudioElement, play, cleanup } = useSampleAudio();
+  const [audioSource, setAudioSource] = useState<HTMLAudioElement | undefined>(
+    undefined
+  );
+
+  const eq = useStadiumEQ({
+    wasmUrl: "/stadium_eq.wasm",
+    audioSource,
+  });
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef<number>(0);
+
+  const handleStart = useCallback(async () => {
+    const el = getAudioElement(sourceId);
+    setAudioSource(el);
+    // Small delay so React picks up the new audioSource before start()
+    await new Promise((r) => setTimeout(r, 0));
+  }, [sourceId, getAudioElement]);
+
+  // Trigger start once audioSource is set
+  const pendingStart = useRef(false);
+  useEffect(() => {
+    if (pendingStart.current && !eq.isRunning) {
+      pendingStart.current = false;
+      eq.start().then(() => play());
+    }
+  }, [audioSource, eq, play]);
+
+  const handleToggle = useCallback(async () => {
+    if (eq.isRunning) {
+      eq.stop();
+      cleanup();
+    } else {
+      const el = getAudioElement(sourceId);
+      setAudioSource(el);
+      pendingStart.current = true;
+    }
+  }, [eq, sourceId, getAudioElement, cleanup]);
 
   // Custom circular spectrum visualizer
   useEffect(() => {
@@ -46,7 +84,7 @@ export default function CustomEQDemo() {
       ctx.fillRect(0, 0, w, h);
 
       const bins = 64;
-      const step = Math.PI * 2 / bins;
+      const step = (Math.PI * 2) / bins;
       ctx.beginPath();
       for (let i = 0; i <= bins; i++) {
         const idx = Math.floor((i / bins) * data.length);
@@ -72,7 +110,11 @@ export default function CustomEQDemo() {
     };
   }, [eq.isRunning, eq.instance]);
 
-  const sliders: { label: string; key: "crowd" | "speaker" | "music"; icon: string }[] = [
+  const sliders: {
+    label: string;
+    key: "crowd" | "speaker" | "music";
+    icon: string;
+  }[] = [
     { label: "Crowd", key: "crowd", icon: "👥" },
     { label: "Speaker", key: "speaker", icon: "🎙" },
     { label: "Music", key: "music", icon: "🎵" },
@@ -96,10 +138,18 @@ export default function CustomEQDemo() {
               height: 12,
               borderRadius: "50%",
               background: STATUS_COLORS[eq.status] ?? "#555",
-              boxShadow: eq.isRunning ? `0 0 8px ${STATUS_COLORS[eq.status]}` : "none",
+              boxShadow: eq.isRunning
+                ? `0 0 8px ${STATUS_COLORS[eq.status]}`
+                : "none",
             }}
           />
-          <span style={{ fontSize: 13, textTransform: "uppercase", letterSpacing: 1 }}>
+          <span
+            style={{
+              fontSize: 13,
+              textTransform: "uppercase",
+              letterSpacing: 1,
+            }}
+          >
             {eq.status}
           </span>
         </div>
@@ -108,8 +158,17 @@ export default function CustomEQDemo() {
         )}
       </div>
 
+      {/* Audio source selector */}
+      <AudioSourceSelector
+        value={sourceId}
+        onChange={setSourceId}
+        disabled={eq.isRunning}
+      />
+
       {/* Circular visualizer */}
-      <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
+      <div
+        style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}
+      >
         <canvas
           ref={canvasRef}
           width={240}
@@ -125,7 +184,7 @@ export default function CustomEQDemo() {
       {/* Action buttons */}
       <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
         <button
-          onClick={eq.isRunning ? eq.stop : () => eq.start()}
+          onClick={handleToggle}
           style={{
             flex: 1,
             padding: "10px 0",
@@ -162,7 +221,14 @@ export default function CustomEQDemo() {
       </div>
 
       {/* Custom card-style sliders */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 8,
+          marginBottom: 16,
+        }}
+      >
         {sliders.map(({ label, key, icon }) => (
           <div
             key={key}
@@ -176,7 +242,14 @@ export default function CustomEQDemo() {
             }}
           >
             <span style={{ fontSize: 18, width: 24 }}>{icon}</span>
-            <span style={{ fontSize: 13, fontWeight: 600, width: 60, flexShrink: 0 }}>
+            <span
+              style={{
+                fontSize: 13,
+                fontWeight: 600,
+                width: 60,
+                flexShrink: 0,
+              }}
+            >
               {label}
             </span>
             <input
@@ -214,7 +287,14 @@ export default function CustomEQDemo() {
           }}
         >
           <span style={{ fontSize: 18, width: 24 }}>🔊</span>
-          <span style={{ fontSize: 13, fontWeight: 600, width: 60, flexShrink: 0 }}>
+          <span
+            style={{
+              fontSize: 13,
+              fontWeight: 600,
+              width: 60,
+              flexShrink: 0,
+            }}
+          >
             Gain
           </span>
           <input
