@@ -1,4 +1,3 @@
-/// 42-feature extraction per frame following the RNNoise Bark-scale band scheme.
 pub const BARK_BANDS: usize = 22;
 
 /// 23 edges defining 22 Bark-scale bands in FFT bin indices (48 kHz, 1024-point FFT).
@@ -7,6 +6,7 @@ pub const BARK_BAND_EDGES: [usize; 23] = [
     513,
 ];
 
+#[derive(Default)]
 pub struct FeatureExtractor {
     prev_band_energy: [f32; BARK_BANDS],
     frame_count: usize,
@@ -14,10 +14,7 @@ pub struct FeatureExtractor {
 
 impl FeatureExtractor {
     pub fn new() -> Self {
-        FeatureExtractor {
-            prev_band_energy: [0.0; BARK_BANDS],
-            frame_count: 0,
-        }
+        Self::default()
     }
 
     /// Extract 42 features from a power spectrum.
@@ -31,16 +28,14 @@ impl FeatureExtractor {
         let mut features = [0.0f32; 42];
 
         // 1. Compute log band energies
-        for band in 0..BARK_BANDS {
+        for (band, be) in band_energy.iter_mut().enumerate().take(BARK_BANDS) {
             let start = BARK_BAND_EDGES[band];
             let end = BARK_BAND_EDGES[band + 1];
             let mut sum = 0.0f32;
-            for bin in start..end {
-                if bin < power_spectrum.len() {
-                    sum += power_spectrum[bin];
-                }
+            for &bin_val in power_spectrum.iter().take(end).skip(start) {
+                sum += bin_val;
             }
-            band_energy[band] = (sum + 1e-10).log10() / 10.0;
+            *be = (sum + 1e-10).log10() / 10.0;
         }
 
         // features[0..22] = band log energies
@@ -48,8 +43,13 @@ impl FeatureExtractor {
 
         // 2. Temporal derivative (first 20 bands)
         if self.frame_count > 0 {
-            for i in 0..20 {
-                features[22 + i] = band_energy[i] - self.prev_band_energy[i];
+            for (i, (&be, &prev)) in band_energy
+                .iter()
+                .zip(self.prev_band_energy.iter())
+                .enumerate()
+                .take(20)
+            {
+                features[22 + i] = be - prev;
             }
         }
         // On the first frame, features[22..42] remain 0.
@@ -59,12 +59,6 @@ impl FeatureExtractor {
         self.frame_count += 1;
 
         features
-    }
-}
-
-impl Default for FeatureExtractor {
-    fn default() -> Self {
-        Self::new()
     }
 }
 

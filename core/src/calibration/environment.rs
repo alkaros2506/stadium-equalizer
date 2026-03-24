@@ -142,7 +142,7 @@ mod tests {
         let num_bins = 513;
         let noise_floor = vec![0.01_f32; num_bins];
         let features = extract_features(&noise_floor, 48000, 1024, -30.0, 0.5);
-        assert!(features.low_freq_energy_ratio >= 0.0 && features.low_freq_energy_ratio <= 1.0);
-        assert!(features.mid_freq_energy_ratio >= 0.0 && features.mid_freq_energy_ratio <= 1.0);
+        assert!((0.0..=1.0).contains(&features.low_freq_energy_ratio));
+        assert!((0.0..=1.0).contains(&features.mid_freq_energy_ratio));
     }
 }

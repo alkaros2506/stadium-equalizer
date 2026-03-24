@@ -146,6 +146,7 @@ impl BiquadFilter {
 }
 
 /// A bank of biquad filters applied in series for parametric EQ shaping.
+#[derive(Default)]
 pub struct BiquadBank {
     filters: Vec<BiquadFilter>,
 }
@@ -214,12 +215,6 @@ impl BiquadBank {
         )));
 
         bank
-    }
-}
-
-impl Default for BiquadBank {
-    fn default() -> Self {
-        Self::new()
     }
 }
 

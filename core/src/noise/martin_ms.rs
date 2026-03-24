@@ -60,12 +60,12 @@ impl MartinMsEstimator {
     /// Compute the overall minimum across all subwindows and the current
     /// running subwindow minimum, then apply bias compensation.
     fn compute_noise_psd(&mut self) {
-        for k in 0..self.num_bins {
+        for (k, psd) in self.noise_psd.iter_mut().enumerate().take(self.num_bins) {
             let mut overall_min = self.current_subwindow_min[k];
             for sw in &self.subwindow_mins {
                 overall_min = overall_min.min(sw[k]);
             }
-            self.noise_psd[k] = (self.bias_compensation * overall_min).max(PSD_FLOOR);
+            *psd = (self.bias_compensation * overall_min).max(PSD_FLOOR);
         }
     }
 }
@@ -76,8 +76,8 @@ impl NoiseEstimator for MartinMsEstimator {
 
         // First frame: initialize everything from the input spectrum.
         if !self.initialized {
-            for k in 0..len {
-                let val = power_spectrum[k].max(PSD_FLOOR);
+            for (k, &ps) in power_spectrum.iter().enumerate().take(len) {
+                let val = ps.max(PSD_FLOOR);
                 self.smoothed_psd[k] = val;
                 self.current_subwindow_min[k] = val;
                 for sw in self.subwindow_mins.iter_mut() {
@@ -98,8 +98,13 @@ impl NoiseEstimator for MartinMsEstimator {
         }
 
         // Step 2: Update the running minimum for the current subwindow.
-        for k in 0..len {
-            self.current_subwindow_min[k] = self.current_subwindow_min[k].min(self.smoothed_psd[k]);
+        for (csm, &sp) in self
+            .current_subwindow_min
+            .iter_mut()
+            .zip(self.smoothed_psd.iter())
+            .take(len)
+        {
+            *csm = csm.min(sp);
         }
 
         self.frame_counter += 1;
@@ -108,8 +113,12 @@ impl NoiseEstimator for MartinMsEstimator {
         if self.frame_counter >= self.subwindow_length {
             // Store completed subwindow minimum into the ring.
             let idx = self.subwindow_counter % self.num_subwindows;
-            for k in 0..self.num_bins {
-                self.subwindow_mins[idx][k] = self.current_subwindow_min[k];
+            for (sw, &csm) in self.subwindow_mins[idx]
+                .iter_mut()
+                .zip(self.current_subwindow_min.iter())
+                .take(self.num_bins)
+            {
+                *sw = csm;
             }
 
             // Advance the ring pointer.
@@ -119,8 +128,13 @@ impl NoiseEstimator for MartinMsEstimator {
             self.current_subwindow_min.fill(f32::MAX);
             // Pre-seed with current smoothed values so the new subwindow
             // starts with at least one observation.
-            for k in 0..self.num_bins {
-                self.current_subwindow_min[k] = self.smoothed_psd[k];
+            for (csm, &sp) in self
+                .current_subwindow_min
+                .iter_mut()
+                .zip(self.smoothed_psd.iter())
+                .take(self.num_bins)
+            {
+                *csm = sp;
             }
 
             self.frame_counter = 0;

@@ -9,9 +9,8 @@ impl SpectralGate {
     /// For each bin k, `spectrum[k] *= gain[k]`.
     /// The shorter of the two slices determines how many bins are processed.
     pub fn apply(spectrum: &mut [Complex<f32>], gains: &[f32]) {
-        let len = spectrum.len().min(gains.len());
-        for k in 0..len {
-            spectrum[k] *= gains[k];
+        for (s, &g) in spectrum.iter_mut().zip(gains.iter()) {
+            *s *= g;
         }
     }
 
@@ -26,9 +25,8 @@ impl SpectralGate {
             *v = 1.0;
         }
         for gain_vec in gains {
-            let len = output.len().min(gain_vec.len());
-            for k in 0..len {
-                output[k] *= gain_vec[k];
+            for (o, &g) in output.iter_mut().zip(gain_vec.iter()) {
+                *o *= g;
             }
         }
     }
@@ -42,9 +40,8 @@ impl SpectralGate {
     ///
     /// All slices must be at least as long as `output`.
     pub fn smooth_gains(prev: &[f32], current: &[f32], alpha: f32, output: &mut [f32]) {
-        let len = output.len().min(prev.len()).min(current.len());
-        for k in 0..len {
-            output[k] = alpha * prev[k] + (1.0 - alpha) * current[k];
+        for ((o, &p), &c) in output.iter_mut().zip(prev.iter()).zip(current.iter()) {
+            *o = alpha * p + (1.0 - alpha) * c;
         }
     }
 }

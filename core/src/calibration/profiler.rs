@@ -111,25 +111,34 @@ impl NoiseProfiler {
 
         // Find low edge.
         let mut cumulative = 0.0_f32;
-        let mut low_bin = 0;
-        for (k, &v) in profile.iter().enumerate() {
-            cumulative += v;
-            if cumulative >= threshold {
-                low_bin = k;
-                break;
-            }
-        }
+        let low_bin = profile
+            .iter()
+            .enumerate()
+            .find_map(|(k, &v)| {
+                cumulative += v;
+                if cumulative >= threshold {
+                    Some(k)
+                } else {
+                    None
+                }
+            })
+            .unwrap_or(0);
 
         // Find high edge.
         cumulative = 0.0;
-        let mut high_bin = profile.len().saturating_sub(1);
-        for (k, &v) in profile.iter().enumerate().rev() {
-            cumulative += v;
-            if cumulative >= threshold {
-                high_bin = k;
-                break;
-            }
-        }
+        let high_bin = profile
+            .iter()
+            .enumerate()
+            .rev()
+            .find_map(|(k, &v)| {
+                cumulative += v;
+                if cumulative >= threshold {
+                    Some(k)
+                } else {
+                    None
+                }
+            })
+            .unwrap_or(profile.len().saturating_sub(1));
 
         let low_hz = low_bin as f32 * bin_hz;
         let high_hz = high_bin as f32 * bin_hz;

@@ -1,5 +1,4 @@
 use crate::feature_extract::{FeatureExtractor, BARK_BANDS};
-/// Full RNNoise-style model: dense + 3 GRU layers + dense output producing 22 band gains.
 use crate::gru::{matrix_vector_multiply, sigmoid, GruLayer};
 
 pub struct DenseLayer {

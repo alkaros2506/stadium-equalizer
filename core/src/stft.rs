@@ -110,16 +110,25 @@ impl StftEngine {
         // The output for this frame is the first hop_size samples of the
         // overlap-added result.
         let mut result = vec![0.0; self.hop_size];
-        for (i, item) in result.iter_mut().enumerate().take(self.hop_size) {
-            *item = self.output_buffer[i] + self.prev_output[i];
+        for ((item, &ob), &po) in result
+            .iter_mut()
+            .zip(self.output_buffer.iter())
+            .zip(self.prev_output.iter())
+        {
+            *item = ob + po;
         }
 
         // Update prev_output: shift the remaining overlap region and add the
         // tail of the current output.
         let mut new_prev = vec![0.0; self.fft_size];
         // Carry forward the unused portion of the old overlap.
-        for (i, item) in new_prev.iter_mut().enumerate().take(overlap_len) {
-            *item = self.prev_output[self.hop_size + i] + self.output_buffer[self.hop_size + i];
+        for ((item, &po), &ob) in new_prev
+            .iter_mut()
+            .zip(self.prev_output[self.hop_size..].iter())
+            .zip(self.output_buffer[self.hop_size..].iter())
+            .take(overlap_len)
+        {
+            *item = po + ob;
         }
         self.prev_output = new_prev;
 

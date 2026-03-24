@@ -86,8 +86,11 @@ mod tests {
         let skip = 2 * hop_size;
         let compare_len = (total_samples - skip).min(all_output.len() - skip);
         let mut max_error: f32 = 0.0;
-        for i in 0..compare_len {
-            let err = (signal[skip + i] - all_output[skip + i]).abs();
+        for (&s, &o) in signal[skip..skip + compare_len]
+            .iter()
+            .zip(all_output[skip..skip + compare_len].iter())
+        {
+            let err = (s - o).abs();
             if err > max_error {
                 max_error = err;
             }
@@ -216,13 +219,13 @@ mod tests {
         // High SNR
         let gains = filter.compute_gains(&vec![1.0; num_bins], &vec![0.01; num_bins]);
         for &g in gains.iter() {
-            assert!(g >= beta && g <= 1.0);
+            assert!((beta..=1.0).contains(&g));
         }
 
         // Low SNR
         let gains = filter.compute_gains(&vec![0.05; num_bins], &vec![0.05; num_bins]);
         for &g in gains.iter() {
-            assert!(g >= beta && g <= 1.0);
+            assert!((beta..=1.0).contains(&g));
         }
 
         // Zero power

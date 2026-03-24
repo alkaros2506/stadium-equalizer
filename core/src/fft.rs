@@ -5,8 +5,8 @@ use std::sync::Arc;
 /// Wrapper around `realfft` providing forward and inverse real-valued FFT.
 pub struct FftEngine {
     fft_size: usize,
-    forward: Arc<dyn RealToComplex<f32>>,
-    inverse: Arc<dyn ComplexToReal<f32>>,
+    forward: Arc<dyn RealToComplex<f32> + Send + Sync>,
+    inverse: Arc<dyn ComplexToReal<f32> + Send + Sync>,
     scratch_forward: Vec<Complex<f32>>,
     scratch_inverse: Vec<Complex<f32>>,
 }

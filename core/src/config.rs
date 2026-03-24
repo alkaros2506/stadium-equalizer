@@ -128,23 +128,12 @@ impl Default for ProcessingPreset {
 }
 
 /// User-facing mix levels (all in dB, 0.0 = unity).
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default)]
 pub struct UserMix {
     pub crowd_level: f32,
     pub speaker_level: f32,
     pub music_level: f32,
     pub overall_gain: f32,
-}
-
-impl Default for UserMix {
-    fn default() -> Self {
-        Self {
-            crowd_level: 0.0,
-            speaker_level: 0.0,
-            music_level: 0.0,
-            overall_gain: 0.0,
-        }
-    }
 }
 
 /// Result of the calibration phase.

@@ -65,7 +65,15 @@ impl BandEnergyAnalyzer {
         let is_speech_factor: f32 = if is_speech { 1.0 } else { 0.0 };
         let epsilon: f32 = 1e-8;
 
-        for bin in 0..self.num_bins {
+        for (bin, ((cw, sw), mw)) in self
+            .smoothed_weights
+            .crowd
+            .iter_mut()
+            .zip(self.smoothed_weights.speech.iter_mut())
+            .zip(self.smoothed_weights.music.iter_mut())
+            .enumerate()
+            .take(self.num_bins)
+        {
             let freq = bin as f32 * self.sample_rate as f32 / self.fft_size as f32;
 
             // --- Crowd noise: 200-2000 Hz, high spectral flatness ---
@@ -99,12 +107,9 @@ impl BandEnergyAnalyzer {
 
             // --- Temporal smoothing ---
             let alpha = self.smoothing_alpha;
-            self.smoothed_weights.crowd[bin] =
-                alpha * self.smoothed_weights.crowd[bin] + (1.0 - alpha) * crowd_norm;
-            self.smoothed_weights.speech[bin] =
-                alpha * self.smoothed_weights.speech[bin] + (1.0 - alpha) * speech_norm;
-            self.smoothed_weights.music[bin] =
-                alpha * self.smoothed_weights.music[bin] + (1.0 - alpha) * music_norm;
+            *cw = alpha * *cw + (1.0 - alpha) * crowd_norm;
+            *sw = alpha * *sw + (1.0 - alpha) * speech_norm;
+            *mw = alpha * *mw + (1.0 - alpha) * music_norm;
         }
 
         // Store current power for future temporal analysis

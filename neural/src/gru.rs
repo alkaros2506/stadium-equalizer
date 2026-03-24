@@ -37,8 +37,8 @@ pub fn matrix_vector_multiply(
     for (row, out) in output.iter_mut().enumerate().take(rows) {
         let mut sum = 0.0f32;
         let base = row * cols;
-        for col in 0..cols {
-            sum += matrix[base + col] * vec[col];
+        for (col, &v) in vec.iter().enumerate().take(cols) {
+            sum += matrix[base + col] * v;
         }
         *out = sum;
     }
@@ -72,15 +72,27 @@ impl GruLayer {
             3 * wi_len + 2 * wh_len,
         ];
 
-        for i in 0..wi_len {
-            w_z[i] = deterministic_weight(offsets[0] + i);
-            w_r[i] = deterministic_weight(offsets[1] + i);
-            w_h[i] = deterministic_weight(offsets[2] + i);
+        for (i, ((wz, wr), wh)) in w_z
+            .iter_mut()
+            .zip(w_r.iter_mut())
+            .zip(w_h.iter_mut())
+            .enumerate()
+            .take(wi_len)
+        {
+            *wz = deterministic_weight(offsets[0] + i);
+            *wr = deterministic_weight(offsets[1] + i);
+            *wh = deterministic_weight(offsets[2] + i);
         }
-        for i in 0..wh_len {
-            u_z[i] = deterministic_weight(offsets[3] + i);
-            u_r[i] = deterministic_weight(offsets[4] + i);
-            u_h[i] = deterministic_weight(offsets[5] + i);
+        for (i, ((uz, ur), uh)) in u_z
+            .iter_mut()
+            .zip(u_r.iter_mut())
+            .zip(u_h.iter_mut())
+            .enumerate()
+            .take(wh_len)
+        {
+            *uz = deterministic_weight(offsets[3] + i);
+            *ur = deterministic_weight(offsets[4] + i);
+            *uh = deterministic_weight(offsets[5] + i);
         }
 
         GruLayer {
@@ -117,35 +129,47 @@ impl GruLayer {
         matrix_vector_multiply(&self.w_z, input, h, self.input_size, &mut wi_buf);
         matrix_vector_multiply(&self.u_z, &self.state, h, h, &mut uh_buf);
         let mut z = vec![0.0f32; h];
-        for i in 0..h {
-            z[i] = sigmoid(wi_buf[i] + uh_buf[i] + self.bias_z[i]);
+        for ((zv, &wi), (&uh, &bz)) in z
+            .iter_mut()
+            .zip(wi_buf.iter())
+            .zip(uh_buf.iter().zip(self.bias_z.iter()))
+        {
+            *zv = sigmoid(wi + uh + bz);
         }
 
         // --- Reset gate r ---
         matrix_vector_multiply(&self.w_r, input, h, self.input_size, &mut wi_buf);
         matrix_vector_multiply(&self.u_r, &self.state, h, h, &mut uh_buf);
         let mut r = vec![0.0f32; h];
-        for i in 0..h {
-            r[i] = sigmoid(wi_buf[i] + uh_buf[i] + self.bias_r[i]);
+        for ((rv, &wi), (&uh, &br)) in r
+            .iter_mut()
+            .zip(wi_buf.iter())
+            .zip(uh_buf.iter().zip(self.bias_r.iter()))
+        {
+            *rv = sigmoid(wi + uh + br);
         }
 
         // --- Candidate hidden state ---
         // Compute r * state
         let mut r_state = vec![0.0f32; h];
-        for i in 0..h {
-            r_state[i] = r[i] * self.state[i];
+        for ((rs, &rv), &sv) in r_state.iter_mut().zip(r.iter()).zip(self.state.iter()) {
+            *rs = rv * sv;
         }
 
         matrix_vector_multiply(&self.w_h, input, h, self.input_size, &mut wi_buf);
         matrix_vector_multiply(&self.u_h, &r_state, h, h, &mut uh_buf);
         let mut h_candidate = vec![0.0f32; h];
-        for i in 0..h {
-            h_candidate[i] = (wi_buf[i] + uh_buf[i] + self.bias_h[i]).tanh();
+        for ((hc, &wi), (&uh, &bh)) in h_candidate
+            .iter_mut()
+            .zip(wi_buf.iter())
+            .zip(uh_buf.iter().zip(self.bias_h.iter()))
+        {
+            *hc = (wi + uh + bh).tanh();
         }
 
         // --- New state ---
-        for i in 0..h {
-            self.state[i] = (1.0 - z[i]) * self.state[i] + z[i] * h_candidate[i];
+        for ((sv, &zv), &hc) in self.state.iter_mut().zip(z.iter()).zip(h_candidate.iter()) {
+            *sv = (1.0 - zv) * *sv + zv * hc;
         }
 
         &self.state

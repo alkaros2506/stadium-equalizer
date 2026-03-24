@@ -1,4 +1,3 @@
-/// Interpolate 22 Bark-scale band gains to per-FFT-bin gains.
 use crate::feature_extract::{BARK_BANDS, BARK_BAND_EDGES};
 
 pub struct BandGainInterpolator {
@@ -23,11 +22,16 @@ impl BandGainInterpolator {
     pub fn interpolate(&mut self, band_gains: &[f32; BARK_BANDS]) -> &[f32] {
         // Precompute band center bins (midpoint of each band).
         let mut band_centers = [0usize; BARK_BANDS];
-        for b in 0..BARK_BANDS {
-            band_centers[b] = (BARK_BAND_EDGES[b] + BARK_BAND_EDGES[b + 1]) / 2;
+        for (b, bc) in band_centers.iter_mut().enumerate().take(BARK_BANDS) {
+            *bc = (BARK_BAND_EDGES[b] + BARK_BAND_EDGES[b + 1]) / 2;
         }
 
-        for bin in 0..self.num_bins {
+        for (bin, ig) in self
+            .interpolated_gains
+            .iter_mut()
+            .enumerate()
+            .take(self.num_bins)
+        {
             // Find which band this bin belongs to.
             let band = find_band(bin);
 
@@ -36,39 +40,37 @@ impl BandGainInterpolator {
                     let center = band_centers[b];
                     if bin == center || BARK_BANDS <= 1 {
                         // Exactly at the center: use band gain directly.
-                        self.interpolated_gains[bin] = band_gains[b];
+                        *ig = band_gains[b];
                     } else if bin < center && b > 0 {
                         // Between previous band center and this band center:
                         // linearly interpolate.
                         let prev_center = band_centers[b - 1];
                         if center == prev_center {
-                            self.interpolated_gains[bin] = band_gains[b];
+                            *ig = band_gains[b];
                         } else {
                             let t = (bin as f32 - prev_center as f32)
                                 / (center as f32 - prev_center as f32);
-                            self.interpolated_gains[bin] =
-                                band_gains[b - 1] * (1.0 - t) + band_gains[b] * t;
+                            *ig = band_gains[b - 1] * (1.0 - t) + band_gains[b] * t;
                         }
                     } else if bin > center && b < BARK_BANDS - 1 {
                         // Between this band center and next band center:
                         // linearly interpolate.
                         let next_center = band_centers[b + 1];
                         if next_center == center {
-                            self.interpolated_gains[bin] = band_gains[b];
+                            *ig = band_gains[b];
                         } else {
                             let t =
                                 (bin as f32 - center as f32) / (next_center as f32 - center as f32);
-                            self.interpolated_gains[bin] =
-                                band_gains[b] * (1.0 - t) + band_gains[b + 1] * t;
+                            *ig = band_gains[b] * (1.0 - t) + band_gains[b + 1] * t;
                         }
                     } else {
                         // Edge cases: first band before center or last band after center.
-                        self.interpolated_gains[bin] = band_gains[b];
+                        *ig = band_gains[b];
                     }
                 }
                 None => {
                     // Beyond all band edges: use the last band gain.
-                    self.interpolated_gains[bin] = band_gains[BARK_BANDS - 1];
+                    *ig = band_gains[BARK_BANDS - 1];
                 }
             }
         }

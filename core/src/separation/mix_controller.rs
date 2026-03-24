@@ -4,22 +4,12 @@ use super::band_energy::SourceWeights;
 ///
 /// Each level ranges from -1.0 (full suppression) through 0.0 (natural)
 /// to 1.0 (maximum boost).
+#[derive(Default)]
 pub struct UserMix {
     pub crowd_level: f32,
     pub speaker_level: f32,
     pub music_level: f32,
     pub overall_gain_db: f32,
-}
-
-impl Default for UserMix {
-    fn default() -> Self {
-        Self {
-            crowd_level: 0.0,
-            speaker_level: 0.0,
-            music_level: 0.0,
-            overall_gain_db: 0.0,
-        }
-    }
 }
 
 /// Converts a user level (-1.0..=1.0) to a linear gain multiplier.
@@ -37,7 +27,6 @@ fn level_to_gain(level: f32) -> f32 {
 /// Computes per-bin gain masks from source classification weights
 /// and user mix preferences.
 pub struct MixController {
-    num_bins: usize,
     mix: UserMix,
     gain_mask: Vec<f32>,
 }
@@ -46,7 +35,6 @@ impl MixController {
     /// Create a new controller with the default (natural) mix.
     pub fn new(num_bins: usize) -> Self {
         Self {
-            num_bins,
             mix: UserMix::default(),
             gain_mask: vec![1.0; num_bins],
         }
@@ -73,11 +61,15 @@ impl MixController {
         // overall_gain_db to linear: 10^(dB / 20)
         let overall_linear = 10.0_f32.powf(self.mix.overall_gain_db / 20.0);
 
-        for k in 0..self.num_bins {
-            let g = source_weights.crowd[k] * crowd_gain
-                + source_weights.speech[k] * speech_gain
-                + source_weights.music[k] * music_gain;
-            self.gain_mask[k] = g * overall_linear;
+        for (((mask, &cw), &sw), &mw) in self
+            .gain_mask
+            .iter_mut()
+            .zip(source_weights.crowd.iter())
+            .zip(source_weights.speech.iter())
+            .zip(source_weights.music.iter())
+        {
+            let g = cw * crowd_gain + sw * speech_gain + mw * music_gain;
+            *mask = g * overall_linear;
         }
 
         &self.gain_mask

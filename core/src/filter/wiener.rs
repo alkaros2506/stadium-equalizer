@@ -33,14 +33,19 @@ impl WienerFilter {
     /// Returns a slice of length `num_bins` containing the computed gains.
     pub fn compute_gains(&mut self, power_spectrum: &[f32], noise_psd: &[f32]) -> &[f32] {
         let n = self.num_bins;
-        for k in 0..n {
-            let px = power_spectrum[k];
+        for ((g, &px), &np) in self
+            .gains
+            .iter_mut()
+            .zip(power_spectrum.iter())
+            .zip(noise_psd.iter())
+            .take(n)
+        {
             if px > 0.0 {
-                let gain = (px - self.alpha * noise_psd[k]) / px;
-                self.gains[k] = gain.max(self.beta);
+                let gain = (px - self.alpha * np) / px;
+                *g = gain.max(self.beta);
             } else {
                 // No signal energy; apply spectral floor.
-                self.gains[k] = self.beta;
+                *g = self.beta;
             }
         }
         &self.gains[..n]

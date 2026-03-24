@@ -1,4 +1,3 @@
-/// Voice Activity Detection engine for stadium audio processing.
 /// Result of a single VAD analysis frame.
 #[derive(Debug, Clone, Copy)]
 pub struct VadResult {
