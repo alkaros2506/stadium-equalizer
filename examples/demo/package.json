@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "npm run build:deps && next build",
+    "build:deps": "cd ../../packages/stadium-eq-js && npm install && npm run build && cd ../stadium-eq-react && npm install && npm run build",
     "start": "next start"
   },
   "dependencies": {
@@ -15,6 +16,7 @@
     "stadium-eq-react": "file:../../packages/stadium-eq-react"
   },
   "devDependencies": {
+    "@types/node": "25.5.0",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
     "typescript": "^5.4.0"
