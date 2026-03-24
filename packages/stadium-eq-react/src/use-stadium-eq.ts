@@ -3,7 +3,7 @@ import { StadiumEQ } from "stadium-eq";
 import type { StadiumEQOptions, MixLevels, PipelineStatus } from "stadium-eq";
 
 export interface UseStadiumEQOptions
-  extends Pick<StadiumEQOptions, "wasmUrl" | "workletUrl" | "sampleRate" | "frameSize"> {}
+  extends Pick<StadiumEQOptions, "wasmUrl" | "workletUrl" | "sampleRate" | "frameSize" | "audioSource"> {}
 
 export interface UseStadiumEQReturn {
   /** Current pipeline status. */

@@ -15,8 +15,14 @@ export interface StadiumEQOptions {
   /** Frame size in samples. Defaults to 480 (10ms at 48kHz). */
   frameSize?: number;
 
-  /** Audio input source. Defaults to requesting the microphone. */
-  audioSource?: MediaStream | MediaStreamAudioSourceNode | AudioNode;
+  /**
+   * Audio input source. Defaults to requesting the microphone.
+   *
+   * Accepts a MediaStream, AudioNode, or HTMLMediaElement (e.g. `<audio>`).
+   * When an HTMLMediaElement is provided it is wrapped with
+   * `createMediaElementSource()` using the internal AudioContext.
+   */
+  audioSource?: MediaStream | AudioNode | HTMLMediaElement;
 }
 
 /** Mix levels for the source separation controls. */
