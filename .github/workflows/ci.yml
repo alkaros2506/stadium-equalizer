@@ -59,16 +59,19 @@ jobs:
   js-test:
     name: JS/TS wrapper tests
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        package: [stadium-eq-js, stadium-eq-react]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Install and test ${{ matrix.package }}
-        working-directory: packages/${{ matrix.package }}
+      - name: Install and test stadium-eq-js
+        working-directory: packages/stadium-eq-js
+        run: npm install && npm test
+      - name: Build stadium-eq-js (needed by React package)
+        working-directory: packages/stadium-eq-js
+        run: npx tsc
+      - name: Install and test stadium-eq-react
+        working-directory: packages/stadium-eq-react
         run: npm install && npm test
 
   # Ensure the workspace compiles without default features (no_std path)
