@@ -1,0 +1,10 @@
+[package]
+name = "stadium-eq-tests"
+version.workspace = true
+edition.workspace = true
+
+[dev-dependencies]
+stadium-eq-core = { path = "../core" }
+stadium-eq-neural = { path = "../neural" }
+num-complex = { workspace = true }
+hound = "3.5"

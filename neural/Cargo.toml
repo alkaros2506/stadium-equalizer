@@ -1,0 +1,7 @@
+[package]
+name = "stadium-eq-neural"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+stadium-eq-core = { path = "../core" }

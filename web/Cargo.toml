@@ -1,0 +1,11 @@
+[package]
+name = "stadium-eq-web"
+version.workspace = true
+edition.workspace = true
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+stadium-eq-core = { path = "../core", default-features = false }
+stadium-eq-neural = { path = "../neural" }

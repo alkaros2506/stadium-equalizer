@@ -1,0 +1,16 @@
+[workspace]
+members = ["core", "neural", "cli", "web", "tests"]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+
+[workspace.dependencies]
+# Shared dependencies
+num-complex = "0.4"
+
+[profile.release]
+opt-level = "s"
+lto = true
