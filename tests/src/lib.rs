@@ -95,10 +95,7 @@ mod tests {
         // Note: with sqrt-Hann windows the reconstruction is not perfect
         // at arbitrary hop/fft ratios; we just verify meaningful signal
         // passes through (energy check).
-        let input_energy: f32 = signal[skip..skip + compare_len]
-            .iter()
-            .map(|s| s * s)
-            .sum();
+        let input_energy: f32 = signal[skip..skip + compare_len].iter().map(|s| s * s).sum();
         let output_energy: f32 = all_output[skip..skip + compare_len]
             .iter()
             .map(|s| s * s)
@@ -125,20 +122,22 @@ mod tests {
         let num_frames = 4;
         for frame in 0..num_frames {
             let offset = frame * hop;
-            for n in 0..size {
+            for (n, &w) in window.iter().enumerate().take(size) {
                 let output_idx = offset + n;
                 if output_idx >= hop && output_idx < hop + hop {
-                    cola_sum[output_idx - hop] += window[n] * window[n];
+                    cola_sum[output_idx - hop] += w * w;
                 }
             }
         }
 
         let reference = cola_sum[hop / 2];
-        for i in 1..hop - 1 {
+        for (i, &val) in cola_sum.iter().enumerate().take(hop - 1).skip(1) {
             assert!(
-                (cola_sum[i] - reference).abs() < 0.01,
+                (val - reference).abs() < 0.01,
                 "COLA sum at index {} is {:.6}, expected ~{:.6}",
-                i, cola_sum[i], reference
+                i,
+                val,
+                reference
             );
         }
     }
@@ -163,7 +162,9 @@ mod tests {
             assert!(
                 relative_error < 0.10,
                 "Bin {}: noise PSD {:.6} more than 10% from {:.6}",
-                k, val, noise_level
+                k,
+                val,
+                noise_level
             );
         }
     }
@@ -239,8 +240,8 @@ mod tests {
         let mut vad = VadEngine::new(48000, 1024);
         let num_bins = 513;
         let mut power_spectrum = vec![1e-6_f32; num_bins];
-        for bin in 6..85 {
-            power_spectrum[bin] = 0.1;
+        for item in power_spectrum.iter_mut().take(85).skip(6) {
+            *item = 0.1;
         }
         power_spectrum[20] = 10.0;
         power_spectrum[40] = 8.0;
@@ -266,17 +267,13 @@ mod tests {
     #[test]
     fn test_neural_model_output_range() {
         let mut model = RNNoiseModel::new();
-        let spectra: Vec<Vec<f32>> = vec![
-            vec![0.01; 513],
-            vec![1.0; 513],
-            vec![100.0; 513],
-        ];
+        let spectra: Vec<Vec<f32>> = vec![vec![0.01; 513], vec![1.0; 513], vec![100.0; 513]];
 
         for spectrum in &spectra {
             let gains = model.process_frame(spectrum);
             assert_eq!(gains.len(), BARK_BANDS);
             for &g in gains.iter() {
-                assert!(g >= 0.0 && g <= 1.0, "Gain {} out of [0,1]", g);
+                assert!((0.0..=1.0).contains(&g), "Gain {} out of [0,1]", g);
             }
         }
     }
@@ -314,7 +311,9 @@ mod tests {
                 assert!(
                     (inp - out).abs() < 1e-7,
                     "Sample {}: {} != {} in bypass",
-                    i, inp, out
+                    i,
+                    inp,
+                    out
                 );
             }
         }
@@ -417,9 +416,17 @@ mod tests {
 
         let mask = ctrl.compute_gain_mask(&weights);
         // bin 0: 0.5*0.0 + 0.5*3.0 = 1.5
-        assert!((mask[0] - 1.5).abs() < 1e-5, "Expected 1.5, got {}", mask[0]);
+        assert!(
+            (mask[0] - 1.5).abs() < 1e-5,
+            "Expected 1.5, got {}",
+            mask[0]
+        );
         // bin 1: 0.0*0.0 + 1.0*3.0 = 3.0
-        assert!((mask[1] - 3.0).abs() < 1e-5, "Expected 3.0, got {}", mask[1]);
+        assert!(
+            (mask[1] - 3.0).abs() < 1e-5,
+            "Expected 3.0, got {}",
+            mask[1]
+        );
     }
 
     // -----------------------------------------------------------------------
@@ -437,7 +444,10 @@ mod tests {
         pipeline.start_calibration();
         let noise_frame: Vec<f32> = (0..hop_size)
             .map(|i| {
-                let hash = ((i as u64).wrapping_mul(2862933555777941757).wrapping_add(3037000493)) >> 33;
+                let hash = ((i as u64)
+                    .wrapping_mul(2862933555777941757)
+                    .wrapping_add(3037000493))
+                    >> 33;
                 (hash as f32 / (1u64 << 31) as f32) * 0.02 - 0.01
             })
             .collect();
@@ -467,6 +477,9 @@ mod tests {
             total_energy += output.iter().map(|s| s * s).sum::<f32>();
         }
 
-        assert!(total_energy > 0.0, "Pipeline should produce non-zero output");
+        assert!(
+            total_energy > 0.0,
+            "Pipeline should produce non-zero output"
+        );
     }
 }

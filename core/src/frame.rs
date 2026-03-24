@@ -113,10 +113,7 @@ impl SpectrumFrame {
 
     /// Compute the power spectrum (magnitude squared per bin).
     pub fn power_spectrum(&self) -> Vec<f32> {
-        self.data[..self.len]
-            .iter()
-            .map(|c| c.norm_sqr())
-            .collect()
+        self.data[..self.len].iter().map(|c| c.norm_sqr()).collect()
     }
 
     /// Compute the magnitude spectrum.
@@ -176,8 +173,8 @@ impl<T: Copy + Default> RingBuffer<T> {
     /// Returns the number of samples actually read.
     pub fn read(&mut self, output: &mut [T], count: usize) -> usize {
         let to_read = count.min(self.count).min(output.len());
-        for i in 0..to_read {
-            output[i] = self.buf[self.read_pos];
+        for item in output.iter_mut().take(to_read) {
+            *item = self.buf[self.read_pos];
             self.read_pos = (self.read_pos + 1) % self.capacity;
         }
         self.count -= to_read;

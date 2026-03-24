@@ -88,12 +88,7 @@ mod tests {
         engine.inverse(&mut freq, &mut time);
 
         for (a, b) in original.iter().zip(time.iter()) {
-            assert!(
-                (a - b).abs() < 1e-4,
-                "round-trip mismatch: {} vs {}",
-                a,
-                b
-            );
+            assert!((a - b).abs() < 1e-4, "round-trip mismatch: {} vs {}", a, b);
         }
     }
 }

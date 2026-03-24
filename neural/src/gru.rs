@@ -1,5 +1,4 @@
 /// A single GRU (Gated Recurrent Unit) layer for RNNoise-style noise suppression.
-
 pub struct GruLayer {
     input_size: usize,
     hidden_size: usize,
@@ -25,17 +24,23 @@ pub fn sigmoid(x: f32) -> f32 {
 }
 
 /// Multiply a row-major matrix (rows x cols) by a vector (cols), writing into output (rows).
-pub fn matrix_vector_multiply(matrix: &[f32], vec: &[f32], rows: usize, cols: usize, output: &mut [f32]) {
+pub fn matrix_vector_multiply(
+    matrix: &[f32],
+    vec: &[f32],
+    rows: usize,
+    cols: usize,
+    output: &mut [f32],
+) {
     debug_assert_eq!(matrix.len(), rows * cols);
     debug_assert!(vec.len() >= cols);
     debug_assert!(output.len() >= rows);
-    for row in 0..rows {
+    for (row, out) in output.iter_mut().enumerate().take(rows) {
         let mut sum = 0.0f32;
         let base = row * cols;
         for col in 0..cols {
             sum += matrix[base + col] * vec[col];
         }
-        output[row] = sum;
+        *out = sum;
     }
 }
 
@@ -58,7 +63,14 @@ impl GruLayer {
         let mut u_h = vec![0.0f32; wh_len];
 
         // Use different offsets so each weight matrix gets different values.
-        let offsets: [usize; 6] = [0, wi_len, 2 * wi_len, 3 * wi_len, 3 * wi_len + wh_len, 3 * wi_len + 2 * wh_len];
+        let offsets: [usize; 6] = [
+            0,
+            wi_len,
+            2 * wi_len,
+            3 * wi_len,
+            3 * wi_len + wh_len,
+            3 * wi_len + 2 * wh_len,
+        ];
 
         for i in 0..wi_len {
             w_z[i] = deterministic_weight(offsets[0] + i);

@@ -277,17 +277,18 @@ impl Pipeline {
         let vad_result = self.vad.update(&power);
 
         // 5. Band energy / source separation analysis.
-        let source_weights = self.band_analyzer.analyze(
-            &power,
-            vad_result.spectral_flatness,
-            vad_result.is_speech,
-        );
+        let source_weights =
+            self.band_analyzer
+                .analyze(&power, vad_result.spectral_flatness, vad_result.is_speech);
 
         // 6. Wiener filter gains.
         let wiener_gains = self.wiener.compute_gains(&power, &noise_psd).to_vec();
 
         // 7. Mix-controller gains.
-        let mix_gains = self.mix_controller.compute_gain_mask(source_weights).to_vec();
+        let mix_gains = self
+            .mix_controller
+            .compute_gain_mask(source_weights)
+            .to_vec();
 
         // 8. Combine Wiener and mix gains.
         SpectralGate::combine_gains(&[&wiener_gains, &mix_gains], &mut self.combined_gains);
@@ -444,7 +445,10 @@ mod tests {
     fn test_soft_clip_symmetry() {
         let pos = soft_clip(1.5, 0.8);
         let neg = soft_clip(-1.5, 0.8);
-        assert!((pos + neg).abs() < 1e-7, "Soft clip should be odd-symmetric");
+        assert!(
+            (pos + neg).abs() < 1e-7,
+            "Soft clip should be odd-symmetric"
+        );
     }
 
     #[test]

@@ -1,4 +1,6 @@
+use std::cell::RefCell;
 use std::collections::VecDeque;
+use std::rc::Rc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
@@ -267,11 +269,11 @@ fn run_realtime_mode(cli: &Cli) -> Result<()> {
 
     // Build pipeline.
     let config = build_config(cli);
-    let pipeline = Arc::new(Mutex::new(Pipeline::new(config)));
+    let pipeline = Rc::new(RefCell::new(Pipeline::new(config)));
 
     // Apply user settings.
     {
-        let mut pl = pipeline.lock().unwrap();
+        let mut pl = pipeline.borrow_mut();
         pl.set_mix(build_mix(cli));
 
         if cli.bypass {
@@ -343,7 +345,9 @@ fn run_realtime_mode(cli: &Cli) -> Result<()> {
         .context("Failed to build output stream")?;
 
     // Start streams.
-    input_stream.play().context("Failed to start input stream")?;
+    input_stream
+        .play()
+        .context("Failed to start input stream")?;
     output_stream
         .play()
         .context("Failed to start output stream")?;
@@ -384,7 +388,7 @@ fn run_realtime_mode(cli: &Cli) -> Result<()> {
 
             // Process through the pipeline.
             {
-                let mut pl = pipeline.lock().unwrap();
+                let mut pl = pipeline.borrow_mut();
                 pl.process_frame(&frame_buf, &mut frame_output);
             }
 
@@ -403,7 +407,7 @@ fn run_realtime_mode(cli: &Cli) -> Result<()> {
     drop(input_stream);
     drop(output_stream);
 
-    let state = pipeline.lock().unwrap().get_state().clone();
+    let state = *pipeline.borrow().get_state();
     println!("Final pipeline state: {:?}", state);
     println!("Done.");
 

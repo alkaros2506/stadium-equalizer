@@ -1,10 +1,10 @@
 /// 42-feature extraction per frame following the RNNoise Bark-scale band scheme.
-
 pub const BARK_BANDS: usize = 22;
 
 /// 23 edges defining 22 Bark-scale bands in FFT bin indices (48 kHz, 1024-point FFT).
 pub const BARK_BAND_EDGES: [usize; 23] = [
-    0, 4, 8, 13, 17, 21, 26, 30, 34, 43, 51, 60, 68, 85, 102, 119, 145, 170, 205, 256, 333, 427, 513,
+    0, 4, 8, 13, 17, 21, 26, 30, 34, 43, 51, 60, 68, 85, 102, 119, 145, 170, 205, 256, 333, 427,
+    513,
 ];
 
 pub struct FeatureExtractor {
@@ -85,8 +85,8 @@ mod tests {
         let mut fe = FeatureExtractor::new();
         let spectrum = vec![1.0f32; 513];
         let features = fe.extract(&spectrum);
-        for i in 22..42 {
-            assert_eq!(features[i], 0.0);
+        for item in features.iter().skip(22) {
+            assert_eq!(*item, 0.0);
         }
     }
 

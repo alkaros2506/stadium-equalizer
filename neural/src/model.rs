@@ -1,17 +1,19 @@
-/// Full RNNoise-style model: dense + 3 GRU layers + dense output producing 22 band gains.
-
-use crate::gru::{GruLayer, sigmoid, matrix_vector_multiply};
 use crate::feature_extract::{FeatureExtractor, BARK_BANDS};
+/// Full RNNoise-style model: dense + 3 GRU layers + dense output producing 22 band gains.
+use crate::gru::{matrix_vector_multiply, sigmoid, GruLayer};
 
 pub struct DenseLayer {
-    weights: Vec<f32>,   // output_size x input_size, row-major
-    biases: Vec<f32>,    // output_size
+    weights: Vec<f32>, // output_size x input_size, row-major
+    biases: Vec<f32>,  // output_size
     input_size: usize,
     output_size: usize,
 }
 
 fn dense_deterministic_weight(index: usize) -> f32 {
-    let hash = (index as u64).wrapping_mul(1664525).wrapping_add(1013904223) % 1000;
+    let hash = (index as u64)
+        .wrapping_mul(1664525)
+        .wrapping_add(1013904223)
+        % 1000;
     (hash as f32) / 10000.0 - 0.05
 }
 
@@ -20,8 +22,8 @@ impl DenseLayer {
     pub fn new(input_size: usize, output_size: usize) -> Self {
         let len = output_size * input_size;
         let mut weights = vec![0.0f32; len];
-        for i in 0..len {
-            weights[i] = dense_deterministic_weight(i);
+        for (i, w) in weights.iter_mut().enumerate().take(len) {
+            *w = dense_deterministic_weight(i);
         }
         DenseLayer {
             weights,
@@ -33,25 +35,35 @@ impl DenseLayer {
 
     /// Compute output = weights @ input + biases.
     pub fn forward(&self, input: &[f32], output: &mut [f32]) {
-        matrix_vector_multiply(&self.weights, input, self.output_size, self.input_size, output);
-        for i in 0..self.output_size {
-            output[i] += self.biases[i];
+        matrix_vector_multiply(
+            &self.weights,
+            input,
+            self.output_size,
+            self.input_size,
+            output,
+        );
+        for (out, bias) in output
+            .iter_mut()
+            .zip(self.biases.iter())
+            .take(self.output_size)
+        {
+            *out += bias;
         }
     }
 
     /// Forward pass with tanh activation.
     pub fn forward_tanh(&self, input: &[f32], output: &mut [f32]) {
         self.forward(input, output);
-        for i in 0..self.output_size {
-            output[i] = output[i].tanh();
+        for item in output.iter_mut().take(self.output_size) {
+            *item = item.tanh();
         }
     }
 
     /// Forward pass with sigmoid activation.
     pub fn forward_sigmoid(&self, input: &[f32], output: &mut [f32]) {
         self.forward(input, output);
-        for i in 0..self.output_size {
-            output[i] = sigmoid(output[i]);
+        for item in output.iter_mut().take(self.output_size) {
+            *item = sigmoid(*item);
         }
     }
 }
@@ -149,7 +161,7 @@ mod tests {
         let spectrum = vec![0.5f32; 513];
         let gains = model.process_frame(&spectrum);
         for &g in gains.iter() {
-            assert!(g >= 0.0 && g <= 1.0, "Gain {} out of sigmoid range", g);
+            assert!((0.0..=1.0).contains(&g), "Gain {} out of sigmoid range", g);
         }
     }
 

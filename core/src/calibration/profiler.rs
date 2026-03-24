@@ -27,8 +27,8 @@ impl NoiseProfiler {
     /// * `power_spectrum` - Per-bin |X[k]|^2 values.
     pub fn add_frame(&mut self, power_spectrum: &[f32]) {
         let len = power_spectrum.len().min(self.num_bins);
-        for k in 0..len {
-            self.accumulated[k] += power_spectrum[k] as f64;
+        for (k, &val) in power_spectrum.iter().enumerate().take(len) {
+            self.accumulated[k] += val as f64;
         }
 
         // Compute frame energy in dB.
@@ -60,12 +60,7 @@ impl NoiseProfiler {
             return None;
         }
         let inv = 1.0 / self.frame_count as f64;
-        Some(
-            self.accumulated
-                .iter()
-                .map(|&v| (v * inv) as f32)
-                .collect(),
-        )
+        Some(self.accumulated.iter().map(|&v| (v * inv) as f32).collect())
     }
 
     /// Average energy in dB across all accumulated frames.

@@ -55,8 +55,8 @@ impl NoiseEstimator for SppMmseEstimator {
 
         // First frame: initialize noise PSD directly from the input.
         if !self.initialized {
-            for k in 0..len {
-                self.noise_psd[k] = power_spectrum[k].max(NOISE_PSD_FLOOR);
+            for (k, &ps) in power_spectrum.iter().enumerate().take(len) {
+                self.noise_psd[k] = ps.max(NOISE_PSD_FLOOR);
             }
             self.initialized = true;
             return &self.noise_psd;
@@ -72,10 +72,9 @@ impl NoiseEstimator for SppMmseEstimator {
         let alpha_noise = self.alpha_noise;
         let p_threshold = self.p_threshold;
 
-        for k in 0..len {
+        for (k, &ps) in power_spectrum.iter().enumerate().take(len) {
             // Step 1: a posteriori SNR
-            let gamma = (power_spectrum[k] / self.noise_psd[k].max(NOISE_PSD_FLOOR))
-                .max(GAMMA_MIN);
+            let gamma = (ps / self.noise_psd[k].max(NOISE_PSD_FLOOR)).max(GAMMA_MIN);
 
             // Step 2: v[k] = (xi_h1 / (1 + xi_h1)) * gamma[k]
             let v = (xi_ratio * gamma).min(EXP_ARG_MAX);
@@ -135,7 +134,11 @@ mod tests {
         let result = est.update(&spectrum);
         // First frame should copy spectrum into noise PSD
         for (i, &val) in result.iter().enumerate() {
-            assert!((val - spectrum[i]).abs() < 1e-6, "bin {i}: {val} != {}", spectrum[i]);
+            assert!(
+                (val - spectrum[i]).abs() < 1e-6,
+                "bin {i}: {val} != {}",
+                spectrum[i]
+            );
         }
     }
 

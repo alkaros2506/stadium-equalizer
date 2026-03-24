@@ -105,7 +105,10 @@ mod tests {
             reverb_estimate: 0.05,
             avg_energy_db: -30.0,
         };
-        assert_eq!(classify_environment(&features), EnvironmentClass::BroadcastFeed);
+        assert_eq!(
+            classify_environment(&features),
+            EnvironmentClass::BroadcastFeed
+        );
     }
 
     #[test]

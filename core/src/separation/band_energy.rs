@@ -69,14 +69,14 @@ impl BandEnergyAnalyzer {
             let freq = bin as f32 * self.sample_rate as f32 / self.fft_size as f32;
 
             // --- Crowd noise: 200-2000 Hz, high spectral flatness ---
-            let crowd_raw = if freq >= 200.0 && freq <= 2000.0 {
+            let crowd_raw = if (200.0..=2000.0).contains(&freq) {
                 gaussian(freq, 800.0, 600.0) * spectral_flatness
             } else {
                 0.0
             };
 
             // --- Speech: 300-4000 Hz, low spectral flatness, VAD active ---
-            let speech_raw = if freq >= 300.0 && freq <= 4000.0 {
+            let speech_raw = if (300.0..=4000.0).contains(&freq) {
                 gaussian(freq, 1500.0, 1200.0) * (1.0 - spectral_flatness) * is_speech_factor
             } else {
                 0.0
@@ -85,7 +85,7 @@ impl BandEnergyAnalyzer {
             // --- Music: 80-8000 Hz, moderate flatness, sustained ---
             // Moderate flatness peaks around 0.5, use a gaussian around 0.5 with sigma 0.3
             let flatness_music_scale = gaussian(spectral_flatness, 0.5, 0.3);
-            let music_raw = if freq >= 80.0 && freq <= 8000.0 {
+            let music_raw = if (80.0..=8000.0).contains(&freq) {
                 gaussian(freq, 1000.0, 3000.0) * flatness_music_scale
             } else {
                 0.0
@@ -145,11 +145,13 @@ mod tests {
             let sum = weights.crowd[bin] + weights.speech[bin] + weights.music[bin];
             // Bins outside all source ranges (below 80 Hz or above 8000 Hz)
             // have no classification, so their weights remain at zero — skip those.
-            if freq < 80.0 || freq > 8000.0 {
+            if !(80.0..=8000.0).contains(&freq) {
                 assert!(
                     sum < 0.01,
                     "Out-of-range bin {} (freq {:.0} Hz) should have near-zero weights, got {}",
-                    bin, freq, sum
+                    bin,
+                    freq,
+                    sum
                 );
                 continue;
             }
@@ -157,7 +159,9 @@ mod tests {
             assert!(
                 (sum - 1.0).abs() < 0.05,
                 "Weights at bin {} (freq {:.0} Hz) sum to {} instead of ~1.0",
-                bin, freq, sum
+                bin,
+                freq,
+                sum
             );
         }
     }

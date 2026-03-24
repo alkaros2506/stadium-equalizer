@@ -126,8 +126,7 @@ impl BiquadFilter {
     /// y[n] = b0*x[n] + b1*x[n-1] + b2*x[n-2] - a1*y[n-1] - a2*y[n-2]
     pub fn process_sample(&mut self, x: f32) -> f32 {
         let c = &self.coeffs;
-        let y = c.b0 * x + c.b1 * self.x1 + c.b2 * self.x2
-              - c.a1 * self.y1 - c.a2 * self.y2;
+        let y = c.b0 * x + c.b1 * self.x1 + c.b2 * self.x2 - c.a1 * self.y1 - c.a2 * self.y2;
 
         self.x2 = self.x1;
         self.x1 = x;
@@ -190,18 +189,29 @@ impl BiquadBank {
     pub fn default_stadium_eq(sample_rate: f32) -> Self {
         let mut bank = Self::new();
 
-        bank.add_filter(BiquadFilter::new(
-            BiquadCoeffs::high_pass(sample_rate, 60.0, 0.707),
-        ));
-        bank.add_filter(BiquadFilter::new(
-            BiquadCoeffs::peaking_eq(sample_rate, 250.0, 1.0, -3.0),
-        ));
-        bank.add_filter(BiquadFilter::new(
-            BiquadCoeffs::peaking_eq(sample_rate, 3000.0, 1.5, 2.0),
-        ));
-        bank.add_filter(BiquadFilter::new(
-            BiquadCoeffs::peaking_eq(sample_rate, 8000.0, 2.0, -2.0),
-        ));
+        bank.add_filter(BiquadFilter::new(BiquadCoeffs::high_pass(
+            sample_rate,
+            60.0,
+            0.707,
+        )));
+        bank.add_filter(BiquadFilter::new(BiquadCoeffs::peaking_eq(
+            sample_rate,
+            250.0,
+            1.0,
+            -3.0,
+        )));
+        bank.add_filter(BiquadFilter::new(BiquadCoeffs::peaking_eq(
+            sample_rate,
+            3000.0,
+            1.5,
+            2.0,
+        )));
+        bank.add_filter(BiquadFilter::new(BiquadCoeffs::peaking_eq(
+            sample_rate,
+            8000.0,
+            2.0,
+            -2.0,
+        )));
 
         bank
     }

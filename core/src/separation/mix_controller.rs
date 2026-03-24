@@ -144,7 +144,10 @@ mod tests {
         });
 
         let mask = ctrl.compute_gain_mask(&weights);
-        assert!(mask[0].abs() < 1e-6, "Fully suppressed crowd should yield 0 gain");
+        assert!(
+            mask[0].abs() < 1e-6,
+            "Fully suppressed crowd should yield 0 gain"
+        );
     }
 
     #[test]

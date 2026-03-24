@@ -1,5 +1,4 @@
 /// Interpolate 22 Bark-scale band gains to per-FFT-bin gains.
-
 use crate::feature_extract::{BARK_BANDS, BARK_BAND_EDGES};
 
 pub struct BandGainInterpolator {
@@ -57,8 +56,8 @@ impl BandGainInterpolator {
                         if next_center == center {
                             self.interpolated_gains[bin] = band_gains[b];
                         } else {
-                            let t = (bin as f32 - center as f32)
-                                / (next_center as f32 - center as f32);
+                            let t =
+                                (bin as f32 - center as f32) / (next_center as f32 - center as f32);
                             self.interpolated_gains[bin] =
                                 band_gains[b] * (1.0 - t) + band_gains[b + 1] * t;
                         }
@@ -81,12 +80,7 @@ impl BandGainInterpolator {
 /// Find which Bark band a given FFT bin falls into.
 /// Returns None if the bin is beyond the last band edge.
 fn find_band(bin: usize) -> Option<usize> {
-    for b in 0..BARK_BANDS {
-        if bin < BARK_BAND_EDGES[b + 1] {
-            return Some(b);
-        }
-    }
-    None
+    (0..BARK_BANDS).find(|&b| bin < BARK_BAND_EDGES[b + 1])
 }
 
 #[cfg(test)]
@@ -108,11 +102,7 @@ mod tests {
         let result = interp.interpolate(&gains);
         // When all band gains are equal, every bin should have that gain.
         for &g in result.iter() {
-            assert!(
-                (g - 0.8).abs() < 1e-6,
-                "Expected 0.8, got {}",
-                g
-            );
+            assert!((g - 0.8).abs() < 1e-6, "Expected 0.8, got {}", g);
         }
     }
 
@@ -129,12 +119,12 @@ mod tests {
     fn test_gains_in_range() {
         let mut interp = BandGainInterpolator::new(513);
         let mut gains = [0.0f32; BARK_BANDS];
-        for i in 0..BARK_BANDS {
-            gains[i] = i as f32 / (BARK_BANDS - 1) as f32;
+        for (i, gain) in gains.iter_mut().enumerate().take(BARK_BANDS) {
+            *gain = i as f32 / (BARK_BANDS - 1) as f32;
         }
         let result = interp.interpolate(&gains);
         for &g in result.iter() {
-            assert!(g >= 0.0 && g <= 1.0, "Gain {} out of range", g);
+            assert!((0.0..=1.0).contains(&g), "Gain {} out of range", g);
         }
     }
 }

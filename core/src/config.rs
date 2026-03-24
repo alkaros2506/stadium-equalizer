@@ -27,18 +27,13 @@ pub const DEFAULT_HOP_SIZE: usize = 480;
 // ---------------------------------------------------------------------------
 
 /// Which noise-estimation algorithm to use.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum NoiseEstimatorType {
     /// Speech Presence Probability – Minimum Mean Square Error.
+    #[default]
     SppMmse,
     /// Martin's Minimum Statistics.
     MartinMs,
-}
-
-impl Default for NoiseEstimatorType {
-    fn default() -> Self {
-        Self::SppMmse
-    }
 }
 
 /// Broad classification of the acoustic environment.
@@ -60,8 +55,9 @@ pub enum CrowdDensity {
 }
 
 /// Current state of the processing pipeline.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum PipelineState {
+    #[default]
     Idle,
     Calibrating {
         frames_collected: usize,
@@ -69,12 +65,6 @@ pub enum PipelineState {
     },
     Processing,
     Bypassed,
-}
-
-impl Default for PipelineState {
-    fn default() -> Self {
-        Self::Idle
-    }
 }
 
 // ---------------------------------------------------------------------------

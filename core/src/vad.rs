@@ -1,5 +1,4 @@
 /// Voice Activity Detection engine for stadium audio processing.
-
 /// Result of a single VAD analysis frame.
 #[derive(Debug, Clone, Copy)]
 pub struct VadResult {
@@ -89,7 +88,11 @@ impl VadEngine {
         } else {
             0.0
         };
-        let band_score = if speech_band_ratio > 0.4 { 1.0_f32 } else { 0.0 };
+        let band_score = if speech_band_ratio > 0.4 {
+            1.0_f32
+        } else {
+            0.0
+        };
 
         let raw_probability = 0.3 * energy_score + 0.4 * flatness_score + 0.3 * band_score;
 
@@ -138,8 +141,8 @@ mod tests {
         // Create a spectrum with strong energy in speech band and tonal character
         let mut spectrum = vec![1e-6_f32; 513];
         // Put energy in 300-4000 Hz range (bins ~6 to ~85 at 48kHz/1024)
-        for bin in 6..85 {
-            spectrum[bin] = 0.1;
+        for item in spectrum.iter_mut().take(85).skip(6) {
+            *item = 0.1;
         }
         // Make it tonal by having a few dominant peaks
         spectrum[20] = 10.0;

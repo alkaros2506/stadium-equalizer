@@ -1,6 +1,4 @@
-use crate::config::{
-    CalibrationResult, CrowdDensity, EnvironmentClass, ProcessingPreset,
-};
+use crate::config::{CalibrationResult, CrowdDensity, EnvironmentClass, ProcessingPreset};
 use crate::types::Decibels;
 
 use super::environment::{self, EnvironmentFeatures};

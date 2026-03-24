@@ -96,7 +96,11 @@ impl StftEngine {
         self.fft.inverse(spectrum, &mut self.output_buffer);
 
         // Apply the synthesis window.
-        for (s, &w) in self.output_buffer.iter_mut().zip(self.synthesis_window.iter()) {
+        for (s, &w) in self
+            .output_buffer
+            .iter_mut()
+            .zip(self.synthesis_window.iter())
+        {
             *s *= w;
         }
 
@@ -106,16 +110,16 @@ impl StftEngine {
         // The output for this frame is the first hop_size samples of the
         // overlap-added result.
         let mut result = vec![0.0; self.hop_size];
-        for i in 0..self.hop_size {
-            result[i] = self.output_buffer[i] + self.prev_output[i];
+        for (i, item) in result.iter_mut().enumerate().take(self.hop_size) {
+            *item = self.output_buffer[i] + self.prev_output[i];
         }
 
         // Update prev_output: shift the remaining overlap region and add the
         // tail of the current output.
         let mut new_prev = vec![0.0; self.fft_size];
         // Carry forward the unused portion of the old overlap.
-        for i in 0..overlap_len {
-            new_prev[i] = self.prev_output[self.hop_size + i] + self.output_buffer[self.hop_size + i];
+        for (i, item) in new_prev.iter_mut().enumerate().take(overlap_len) {
+            *item = self.prev_output[self.hop_size + i] + self.output_buffer[self.hop_size + i];
         }
         self.prev_output = new_prev;
 
@@ -178,10 +182,7 @@ mod tests {
         // After several frames the output should have non-trivial energy
         // (not all zeros), confirming the round-trip works.
         let energy: f32 = all_output.iter().map(|s| s * s).sum();
-        assert!(
-            energy > 0.0,
-            "Round-trip should produce non-zero output"
-        );
+        assert!(energy > 0.0, "Round-trip should produce non-zero output");
     }
 
     #[test]

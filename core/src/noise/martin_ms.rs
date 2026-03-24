@@ -92,16 +92,14 @@ impl NoiseEstimator for MartinMsEstimator {
 
         // Step 1: Smooth the input power spectrum.
         let alpha = self.alpha_d;
-        for k in 0..len {
-            self.smoothed_psd[k] =
-                alpha * self.smoothed_psd[k] + (1.0 - alpha) * power_spectrum[k];
+        for (k, &ps) in power_spectrum.iter().enumerate().take(len) {
+            self.smoothed_psd[k] = alpha * self.smoothed_psd[k] + (1.0 - alpha) * ps;
             self.smoothed_psd[k] = self.smoothed_psd[k].max(PSD_FLOOR);
         }
 
         // Step 2: Update the running minimum for the current subwindow.
         for k in 0..len {
-            self.current_subwindow_min[k] =
-                self.current_subwindow_min[k].min(self.smoothed_psd[k]);
+            self.current_subwindow_min[k] = self.current_subwindow_min[k].min(self.smoothed_psd[k]);
         }
 
         self.frame_counter += 1;

@@ -9,7 +9,3 @@ crate-type = ["cdylib"]
 [dependencies]
 stadium-eq-core = { path = "../core", default-features = false }
 stadium-eq-neural = { path = "../neural" }
-
-[profile.release]
-opt-level = "s"
-lto = true
