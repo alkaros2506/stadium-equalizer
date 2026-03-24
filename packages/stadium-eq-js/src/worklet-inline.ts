@@ -55,16 +55,14 @@ class StadiumEqProcessor extends AudioWorkletProcessor {
     this.port.onmessage = (ev) => this.onMessage(ev);
   }
 
-  async onMessage(ev) {
+  onMessage(ev) {
     const msg = ev.data;
 
     switch (msg.type) {
       case "init-wasm": {
-        try {
-          const module = msg.module;
-          this.wasm = await WebAssembly.instantiate(module, {});
-
-          const exports = this.wasm.exports;
+        WebAssembly.instantiate(msg.bytes, {}).then(result => {
+          const exports = result.instance.exports;
+          this.wasm = result.instance;
           this.wasmMemory = exports.memory;
 
           this.wasmAlloc = exports.stadium_eq_alloc;
@@ -82,9 +80,9 @@ class StadiumEqProcessor extends AudioWorkletProcessor {
 
           this.ready = true;
           this.port.postMessage({ type: "ready" });
-        } catch (err) {
+        }).catch(err => {
           this.port.postMessage({ type: "error", error: String(err) });
-        }
+        });
         break;
       }
 
@@ -131,7 +129,7 @@ class StadiumEqProcessor extends AudioWorkletProcessor {
     while (this.inputRing.available >= FRAME_SIZE) {
       const mem = new Float32Array(
         this.wasmMemory.buffer,
-        this.inPtr * 4,
+        this.inPtr,
         FRAME_SIZE
       );
       const tmp = new Float32Array(FRAME_SIZE);
@@ -142,7 +140,7 @@ class StadiumEqProcessor extends AudioWorkletProcessor {
 
       const outMem = new Float32Array(
         this.wasmMemory.buffer,
-        this.outPtr * 4,
+        this.outPtr,
         written
       );
       this.outputRing.push(new Float32Array(outMem));

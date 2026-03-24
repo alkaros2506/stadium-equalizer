@@ -65,15 +65,14 @@ export class StadiumEQ {
     this.setStatus("loading");
 
     try {
-      // 1. Compile WASM
+      // 1. Fetch WASM bytes
       const response = await fetch(this.options.wasmUrl);
       if (!response.ok) {
         throw new Error(
           `Failed to fetch WASM from ${this.options.wasmUrl}: ${response.status} ${response.statusText}`
         );
       }
-      const bytes = await response.arrayBuffer();
-      const wasmModule = await WebAssembly.compile(bytes);
+      const wasmBytes = await response.arrayBuffer();
 
       // 2. Create AudioContext
       this.audioCtx = new AudioContext({
@@ -110,10 +109,10 @@ export class StadiumEQ {
         }
       };
 
-      // 6. Send WASM module to worklet
+      // 6. Send WASM bytes to worklet for compilation + instantiation
       this.workletNode.port.postMessage({
         type: "init-wasm",
-        module: wasmModule,
+        bytes: wasmBytes,
       });
 
       // 7. Connect audio source

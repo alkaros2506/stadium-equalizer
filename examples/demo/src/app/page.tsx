@@ -77,7 +77,7 @@ export default function DropInDemo() {
 
 function App() {
   // Pass an <audio> element to use a sample instead of the mic
-  const audio = new Audio("/samples/stadium-announcer.ogg");
+  const audio = new Audio("/samples/stadium-announcer.mp3");
   audio.loop = true;
 
   return (

@@ -113,10 +113,8 @@ beforeEach(() => {
     }),
   );
 
-  // WebAssembly.compile
-  vi.stubGlobal("WebAssembly", {
-    compile: vi.fn().mockResolvedValue({ __wasmModule: true }),
-  });
+  // WebAssembly — no longer used on the main thread, but stub to catch regressions
+  vi.stubGlobal("WebAssembly", {});
 
   // navigator.mediaDevices.getUserMedia
   vi.stubGlobal("navigator", {
@@ -166,10 +164,10 @@ describe("StadiumEQ", () => {
       // AudioContext constructed with sampleRate 48000
       expect(AudioContext).toHaveBeenCalledWith({ sampleRate: 48000 });
 
-      // init-wasm message was posted (frame size is used internally)
+      // init-wasm message was posted with raw bytes
       expect(mockPort.postMessage).toHaveBeenCalledWith({
         type: "init-wasm",
-        module: { __wasmModule: true },
+        bytes: expect.any(ArrayBuffer),
       });
     });
   });
@@ -183,9 +181,6 @@ describe("StadiumEQ", () => {
 
       // Fetches WASM
       expect(fetch).toHaveBeenCalledWith("/test.wasm");
-
-      // Compiles WASM
-      expect(WebAssembly.compile).toHaveBeenCalled();
 
       // Creates AudioContext
       expect(AudioContext).toHaveBeenCalledWith({ sampleRate: 48000 });
@@ -205,10 +200,10 @@ describe("StadiumEQ", () => {
         },
       );
 
-      // Posts init-wasm message
+      // Posts init-wasm message with raw bytes
       expect(mockPort.postMessage).toHaveBeenCalledWith({
         type: "init-wasm",
-        module: { __wasmModule: true },
+        bytes: expect.any(ArrayBuffer),
       });
 
       // Requests microphone

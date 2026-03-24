@@ -10,37 +10,37 @@ export interface AudioSample {
 export const AUDIO_SAMPLES: AudioSample[] = [
   {
     id: "stadium-announcer",
-    label: "Stadium Announcer",
+    label: "Stadium Roar",
     description:
-      "PA-style announcer voice over a steady stadium crowd hum.",
-    file: "/samples/stadium-announcer.ogg",
+      "Concert stadium crowd roar with cheering and applause.",
+    file: "/samples/stadium-announcer.mp3",
   },
   {
     id: "football-match",
     label: "Football Match",
     description:
-      "Outdoor football crowd with cheering, chanting, and referee whistles.",
-    file: "/samples/football-match.ogg",
+      "Real field recording from a soccer/football match with crowd ambience.",
+    file: "/samples/football-match.mp3",
   },
   {
     id: "concert-venue",
-    label: "Concert Venue",
+    label: "Concert Crowd",
     description:
-      "Large concert hall crowd with bass-heavy music and an MC speaking through reverb.",
-    file: "/samples/concert-venue.ogg",
+      "Concert/stadium crowd cheering with clapping and applause.",
+    file: "/samples/concert-venue.mp3",
   },
   {
     id: "basketball-arena",
-    label: "Basketball Arena",
+    label: "Stadium Cheering",
     description:
-      "Indoor arena echo with sneaker squeaks, a buzzer, and bursty crowd reactions.",
-    file: "/samples/basketball-arena.ogg",
+      "Stadium crowd cheering and applause from a sports event.",
+    file: "/samples/basketball-arena.mp3",
   },
   {
     id: "rally-outdoor",
-    label: "Rally / Outdoor Event",
+    label: "Crowd Cheering",
     description:
-      "Open-air crowd with wind noise and a megaphone-style speaker addressing the audience.",
-    file: "/samples/rally-outdoor.ogg",
+      "Short burst of crowd cheering at a concert or sporting event.",
+    file: "/samples/rally-outdoor.mp3",
   },
 ];

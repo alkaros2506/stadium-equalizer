@@ -95,10 +95,16 @@ export function StadiumEqualizer({
   const handleToggle = useCallback(async () => {
     if (eq.isRunning) {
       eq.stop();
+      if (eqOptions.audioSource instanceof HTMLMediaElement) {
+        eqOptions.audioSource.pause();
+      }
     } else {
       await eq.start();
+      if (eqOptions.audioSource instanceof HTMLMediaElement) {
+        eqOptions.audioSource.play().catch(() => {});
+      }
     }
-  }, [eq]);
+  }, [eq, eqOptions.audioSource]);
 
   return (
     <div className={className} style={{ fontFamily: "sans-serif", color: "#e0e0e0", ...style }}>
