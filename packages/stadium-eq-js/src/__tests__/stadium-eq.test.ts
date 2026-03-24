@@ -106,6 +106,9 @@ beforeEach(() => {
   vi.stubGlobal(
     "fetch",
     vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      statusText: "OK",
       arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(8)),
     }),
   );
@@ -535,7 +538,7 @@ describe("StadiumEQ", () => {
   // ---- Error handling -----------------------------------------------------
 
   describe("start() error handling", () => {
-    it("sets status to 'error' and emits error event on failure", async () => {
+    it("sets status to 'error' and emits error event on network failure", async () => {
       vi.stubGlobal(
         "fetch",
         vi.fn().mockRejectedValue(new Error("Network error")),
@@ -549,6 +552,30 @@ describe("StadiumEQ", () => {
 
       expect(eq.status).toBe("error");
       expect(errorCb).toHaveBeenCalledWith("Error: Network error");
+    });
+
+    it("throws a clear error when WASM fetch returns a non-OK response (e.g. 404)", async () => {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn().mockResolvedValue({
+          ok: false,
+          status: 404,
+          statusText: "Not Found",
+        }),
+      );
+
+      const eq = new StadiumEQ({ wasmUrl: "/stadium_eq.wasm" });
+      const errorCb = vi.fn();
+      eq.on("error", errorCb);
+
+      await expect(eq.start()).rejects.toThrow(
+        "Failed to fetch WASM from /stadium_eq.wasm: 404 Not Found"
+      );
+
+      expect(eq.status).toBe("error");
+      expect(errorCb).toHaveBeenCalledWith(
+        expect.stringContaining("Failed to fetch WASM")
+      );
     });
   });
 

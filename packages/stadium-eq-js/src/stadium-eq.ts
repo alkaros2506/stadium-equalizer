@@ -67,6 +67,11 @@ export class StadiumEQ {
     try {
       // 1. Compile WASM
       const response = await fetch(this.options.wasmUrl);
+      if (!response.ok) {
+        throw new Error(
+          `Failed to fetch WASM from ${this.options.wasmUrl}: ${response.status} ${response.statusText}`
+        );
+      }
       const bytes = await response.arrayBuffer();
       const wasmModule = await WebAssembly.compile(bytes);
 

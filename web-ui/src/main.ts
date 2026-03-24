@@ -17,6 +17,11 @@ let running = false;
 /** Compile the WASM module on the main thread so we can transfer it. */
 async function loadWasmModule(): Promise<WebAssembly.Module> {
   const response = await fetch(WASM_URL);
+  if (!response.ok) {
+    throw new Error(
+      `Failed to fetch WASM from ${WASM_URL}: ${response.status} ${response.statusText}`
+    );
+  }
   const bytes = await response.arrayBuffer();
   return WebAssembly.compile(bytes);
 }
