@@ -56,6 +56,21 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: cargo build --package stadium-eq-web --target wasm32-unknown-unknown --release
 
+  js-test:
+    name: JS/TS wrapper tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        package: [stadium-eq-js, stadium-eq-react]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install and test ${{ matrix.package }}
+        working-directory: packages/${{ matrix.package }}
+        run: npm install && npm test
+
   # Ensure the workspace compiles without default features (no_std path)
   check-no-default-features:
     name: Check no_std (core)
